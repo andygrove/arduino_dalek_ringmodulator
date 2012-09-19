@@ -1,19 +1,15 @@
-/* Arduino Audio Loopback Test
+/* Arduino Ring Modulator for Dalek voice effect
  *
- * Arduino Realtime Audio Processing
- * 2 ADC 8-Bit Mode
- * analog input 1 is used to sample the audio signal
- * analog input 0 is used to control an audio effect
- * PWM DAC with Timer2 as analog output
- 
- 
- 
- * KHM 2008 / Lab3/  Martin Nawrath nawrath@khm.de
- * Kunsthochschule fuer Medien Koeln
- * Academy of Media Arts Cologne
-
+ * Written by Andy Grove
+ * 
+ * Takes mic/line input from analog pin 1 and mixes this signal with a
+ * sine wave then plays the output to digital pin 10 or 11 depending on
+ * the model of Arduino being used (10 on Mega 2560, 11 on most other boards).
+ *
+ * Adapted from example code written by Martin Nawrath nawrath@khm.de
+ * http://interface.khm.de/index.php/lab/experiments/arduino-realtime-audio-processing/
+ *
  */
-
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -28,11 +24,6 @@ PROGMEM  prog_uchar sine256[]  = {
 
 };
 
-
-int ledPin = 13;                 // LED connected to digital pin 13
-int testPin = 7;
-
-
 boolean div32;
 boolean div16;
 // interrupt variables accessed globally
@@ -41,14 +32,8 @@ volatile byte badc0;
 volatile byte badc1;
 volatile byte ibb;
 int cnta;
-
-
-
 int ii;
-
-
 int icnt;
-int cnt2;
 
 float pi = 3.141592;
 float dx ;
@@ -60,9 +45,10 @@ byte bb;
 
 byte dd[512];  // Audio Memory Array 8-Bit
 
-volatile unsigned long phaccu;   // pahse accumulator
-volatile unsigned long tword_m;  // dds tuning word m
-double dfreq;
+// not currently used
+//volatile unsigned long phaccu;   // pahse accumulator
+//volatile unsigned long tword_m;  // dds tuning word m
+//double dfreq;
 
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
@@ -70,27 +56,19 @@ const double refclk=31376.6;      // measured
 
 void setup()
 {
-  pinMode(ledPin, OUTPUT);      // sets the digital pin as output
-  pinMode(testPin, OUTPUT);
   Serial.begin(57600);        // connect to the serial port
   Serial.println("Arduino Audio Ringmodulator");
-
 
   fill_sinewave();        // reload wave after 1 second
 
   //dfreq = 14.5;  
-  dfreq = 30;  
-  
-  tword_m=pow(2,32)*dfreq/refclk;  // calulate DDS new tuning word
-
+//  dfreq = 30;  
+  //tword_m=pow(2,32)*dfreq/refclk;  // calulate DDS new tuning word
 
   // set adc prescaler  to 64 for 19kHz sampling frequency
   cbi(ADCSRA, ADPS2);
   sbi(ADCSRA, ADPS1);
   sbi(ADCSRA, ADPS0);
-
-
-
 
   sbi(ADMUX,ADLAR);  // 8-Bit ADC in ADCH Register
   sbi(ADMUX,REFS0);  // VCC Reference
@@ -100,7 +78,6 @@ void setup()
   cbi(ADMUX,MUX2);
   cbi(ADMUX,MUX3);
 
-
   // Timer2 PWM Mode set to fast PWM 
   cbi (TCCR2A, COM2A0);
   sbi (TCCR2A, COM2A1);
@@ -109,25 +86,19 @@ void setup()
 
   cbi (TCCR2B, WGM22);
 
-
-
-
   // Timer2 Clock Prescaler to : 1 
   sbi (TCCR2B, CS20);
   cbi (TCCR2B, CS21);
   cbi (TCCR2B, CS22);
 
   // Timer2 PWM Port Enable
-  sbi(DDRB,4);                    // set digital pin 10 to output
+  //sbi(DDRB,3);                    // set digital pin 11 to output on Uno
+  sbi(DDRB,4);                    // set digital pin 10 to output on Mega 2560
 
   //cli();                         // disable interrupts to avoid distortion
   cbi (TIMSK0,TOIE0);              // disable Timer0 !!! delay is off now
   sbi (TIMSK2,TOIE2);              // enable Timer2 Interrupt
  
-  Serial.print("ADC offset=");     // trim to 127
-  iw1=badc1;  
-  Serial.println(iw1);
-
 }
 
 
@@ -137,9 +108,9 @@ void loop()
   while (!f_sample) {     // wait for Sample Value from ADC
   }                       // Cycle 15625 KHz = 64uSec 
 
-  //PORTD = PORTD  | 128;   // Test Output on pin 7
   f_sample=false;
   
+  // experimental
   //phaccu=phaccu+tword_m; // soft DDS, phase accu with 32 bits
   //icnt=phaccu >> 24;     // use upper 8 bits for phase accu as frequency information
   //bb = pgm_read_byte_near(sine256 + icnt);    
@@ -151,23 +122,17 @@ void loop()
   iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
   bb = iw+128;            // add dc value again
 
+  // move one position in the 512 sine wave array ... since the frequency
+  // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
   icnt++;                 // increment index
   icnt = icnt & 511;      // limit index 0..511
-
-    cnt2++;               // let the led blink about every second
-  if (cnt2 >= 15360){
-    cnt2=0;
-    //icnt=0;
-    //PORTB = PORTB ^ 32;   // Toggle LED on Pin 11
-
   }
 
+  // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=bb;            // Sample Value to PWM Output
 
-  //PORTD = PORTD  ^ 128;   // Test Output on pin 7
-
-
 } // loop
+
 //******************************************************************
 void fill_sinewave(){
   dx=2 * pi / 512;                    // fill the 512 byte bufferarry
@@ -186,8 +151,6 @@ void fill_sinewave(){
 // here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 2 / 2 = 15625 Hz
 // runtime : xxxx microseconds
 ISR(TIMER2_OVF_vect) {
-
-  //PORTB = PORTB  | 1 ;
 
   div32=!div32;                            // divide timer2 frequency / 2 to 31.25kHz
   if (div32){ 
