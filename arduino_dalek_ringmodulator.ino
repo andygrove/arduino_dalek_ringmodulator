@@ -24,8 +24,9 @@ PROGMEM  prog_uchar sine256[]  = {
 
 };
 
-boolean div32;
-boolean div16;
+// we want to take samples on every nth interval
+int intervalCounter = 0;
+
 // interrupt variables accessed globally
 volatile boolean f_sample;
 volatile byte badc0;
@@ -77,6 +78,8 @@ void setup()
   cbi(ADMUX,MUX1);
   cbi(ADMUX,MUX2);
   cbi(ADMUX,MUX3);
+  
+  sbi(ADMUX,MUX0); // set multiplexer to channel 1
 
   // Timer2 PWM Mode set to fast PWM 
   cbi (TCCR2A, COM2A0);
@@ -147,23 +150,14 @@ void fill_sinewave(){
 
 //******************************************************************
 // Timer2 Interrupt Service at 62.5 KHz
-// here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 2 / 2 = 15625 Hz
+// here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 4 = 15625 Hz
 // runtime : xxxx microseconds
 ISR(TIMER2_OVF_vect) {
-
-  div32=!div32;                            // divide timer2 frequency / 2 to 31.25kHz
-  if (div32){ 
-    div16=!div16;  // 
-    if (div16) {                       // sample channel 0 and 1 alternately so each channel is sampled with 15.6kHz
-      badc0=ADCH;                    // get ADC channel 0
-      sbi(ADMUX,MUX0);               // set multiplexer to channel 1
-    }
-    else
-    {
-      badc1=ADCH;                    // get ADC channel 1
-      cbi(ADMUX,MUX0);               // set multiplexer to channel 0
-      f_sample=true;
-    }
+  
+  if (++intervalCounter==4) {
+    intervalCounter = 0;
+    badc1=ADCH;                    // get ADC channel 1
+    f_sample=true;
     ibb++; 
     ibb--; 
     ibb++; 
