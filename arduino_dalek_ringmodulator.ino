@@ -126,7 +126,6 @@ void loop()
   // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
   icnt++;                 // increment index
   icnt = icnt & 511;      // limit index 0..511
-  }
 
   // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=bb;            // Sample Value to PWM Output
