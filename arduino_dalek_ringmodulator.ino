@@ -35,7 +35,7 @@ volatile byte ibb;
 int cnta;
 int ii;
 int icnt;
-
+byte light;
 float pi = 3.141592;
 float dx ;
 float fd ;
@@ -101,6 +101,8 @@ void setup()
   //cli();                         // disable interrupts to avoid distortion
   cbi (TIMSK0,TOIE0);              // disable Timer0 !!! delay is off now
   sbi (TIMSK2,TOIE2);              // enable Timer2 Interrupt
+  
+  pinMode(9, OUTPUT);
  
 }
 
@@ -132,6 +134,18 @@ void loop()
 
   // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=bb;            // Sample Value to PWM Output
+  
+  // dome lights
+  if (bb > 130 && bb > light) {
+    light = bb;
+  }
+
+  // fade away
+  if (icnt%10==0 && light>0) {
+    light--;
+  }
+
+  analogWrite(9, light);
 
 } // loop
 
