@@ -9,6 +9,10 @@
  * Adapted from example code written by Martin Nawrath nawrath@khm.de
  * http://interface.khm.de/index.php/lab/experiments/arduino-realtime-audio-processing/
  *
+ * Please post any questions or comments to the following forum on the Project Dalek 
+ * web site (requires a free account).
+ *
+ * http://www.projectdalek.com/index.php?showtopic=9746
  */
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
