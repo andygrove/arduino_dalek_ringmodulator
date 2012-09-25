@@ -14,6 +14,8 @@
  *
  * http://www.projectdalek.com/index.php?showtopic=9746
  */
+ 
+boolean enableRingMod = true;
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -58,6 +60,7 @@ byte dd[512];  // Audio Memory Array 8-Bit
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
 
+int mid = 96;
 
 void setup()
 {
@@ -118,29 +121,33 @@ void loop()
   }                       // Cycle 15625 KHz = 64uSec 
 
   f_sample=false;
+
+  if (enableRingMod) {
+    
+    bb=dd[icnt] ;           // get the sinewave buffervalue on indexposition and substract dc
+    iw = bb-mid;
+    iw1= mid- badc1;        // get audiosignal and substract dc
   
-  // experimental
-  //phaccu=phaccu+tword_m; // soft DDS, phase accu with 32 bits
-  //icnt=phaccu >> 24;     // use upper 8 bits for phase accu as frequency information
-  //bb = pgm_read_byte_near(sine256 + icnt);    
-
-  bb=dd[icnt] ;           // get the sinewave buffervalue on indexposition and substract dc
-  iw = bb-128;
-  iw1= 125- badc1;        // get audiosignal and substract dc
-
-  iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
-  bb = iw+128;            // add dc value again
-
-  // move one position in the 512 sine wave array ... since the frequency
-  // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
-  icnt++;                 // increment index
-  icnt = icnt & 511;      // limit index 0..511
-
-  // write to pin associated with timer 2 (10 or 11 depending on board)
-  OCR2A=bb;            // Sample Value to PWM Output
+    iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
+    bb = iw+mid;            // add dc value again
   
+    // move one position in the 512 sine wave array ... since the frequency
+    // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
+    icnt++;                 // increment index
+    icnt = icnt & 511;      // limit index 0..511
+    // write to pin associated with timer 2 (10 or 11 depending on board)
+
+  }
+  else {
+    // pass through input without any modification - good for initial testing!
+    bb = badc1;
+  }
+
+  // write the output
+  OCR2A=bb;          
+
   // dome lights
-  if (bb > 130 && bb > light) {
+  if (bb > mid+7 && bb > light) {
     light = bb;
   }
 
