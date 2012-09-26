@@ -36,11 +36,11 @@ int intervalCounter = 0;
 // interrupt variables accessed globally
 volatile boolean f_sample;
 volatile byte audioInput;
+volatile byte audioOutput;
 volatile byte ibb;
 
-int cnta;
-int ii;
-int icnt;
+int sineWaveIndex;
+
 byte light;
 float pi = 3.141592;
 float dx ;
@@ -50,7 +50,7 @@ int iw;
 int iw1;
 byte bb;
 
-byte dd[512];  // Audio Memory Array 8-Bit
+byte sineWave[512];  // Audio Memory Array 8-Bit
 
 // not currently used
 //volatile unsigned long phaccu;   // pahse accumulator
@@ -124,35 +124,37 @@ void loop()
 
   if (enableRingMod) {
     
-    bb=dd[icnt] ;           // get the sinewave buffervalue on indexposition and substract dc
+    bb=sineWave[sineWaveIndex] ;           // get the sinewave buffervalue on indexposition and substract dc
     iw = bb-mid;
     iw1= mid- audioInput;        // get audiosignal and substract dc
   
     iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
-    bb = iw+mid;            // add dc value again
+    audioOutput = iw+mid;            // add dc value again
   
     // move one position in the 512 sine wave array ... since the frequency
     // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
-    icnt++;                 // increment index
-    icnt = icnt & 511;      // limit index 0..511
+    sineWaveIndex++;                 // increment index
+    sineWaveIndex = sineWaveIndex & 511;      // limit index 0..511
     // write to pin associated with timer 2 (10 or 11 depending on board)
 
   }
   else {
     // pass through input without any modification - good for initial testing!
-    bb = audioInput;
+    audioOutput = audioInput;
   }
 
   // write the output
-  OCR2A=bb;          
+  OCR2A=audioOutput;          
 
-  // dome lights
-  if (bb > mid+7 && bb > light) {
-    light = bb;
+  // trigger dome lights if output signal above some threshold (130 works
+  // for me, but I'd like to make this variable based on a pot input so 
+  // it can be adjusted easily)
+  if (audioOutput > 130 && audioOutput > light) {
+    light = audioOutput;
   }
 
-  // fade away
-  if (icnt%10==0 && light>0) {
+  // fade away to simulate incandescent light bulb
+  if (sineWaveIndex%10==0 && light>0) {
     light--;
   }
 
@@ -167,7 +169,7 @@ void fill_sinewave(){
     fd= 127*sin(fcnt);                // fundamental tone
     fcnt=fcnt+dx;                     // in the range of 0 to 2xpi  and 1/512 increments
     bb=127+fd;                        // add dc offset to sinewawe 
-    dd[iw]=bb;                        // write value into array
+    sineWave[iw]=bb;                        // write value into array
 
   }
 }
