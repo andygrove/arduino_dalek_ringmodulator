@@ -9,6 +9,9 @@
  * Adapted from example code written by Martin Nawrath nawrath@khm.de
  * http://interface.khm.de/index.php/lab/experiments/arduino-realtime-audio-processing/
  *
+ * This source file along with circuit diagrams is available from: 
+ * https://github.com/andygrove/arduino_dalek_ringmodulator
+ *
  * Please post any questions or comments to the following forum on the Project Dalek 
  * web site (requires a free account).
  *
@@ -109,6 +112,8 @@ void loop()
   if (enableRingMod) {
     
     // get the next sinewave value and substract dc so it is in the range -127 .. +127
+    // note that this code runs at 15625 Hz (see notes in timer function for explanation)
+    // and since the sine wave array is 512 long, the sine wave is 15625/512 = 30.5 Hz
     iw = sineWave[sineWaveIndex++] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
