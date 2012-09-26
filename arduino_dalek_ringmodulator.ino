@@ -108,8 +108,8 @@ void loop()
 
   if (enableRingMod) {
     
-    // get the sinewave buffervalue on indexposition and substract dc so it is in the range -127 .. +127
-    iw = sineWave[sineWaveIndex] - 127;
+    // get the next sinewave value and substract dc so it is in the range -127 .. +127
+    iw = sineWave[sineWaveIndex++] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
     iw1 = 127 - audioInput;        
@@ -120,10 +120,8 @@ void loop()
     // add dc value again
     audioOutput = iw+127;            
   
-    // move one position in the 512 sine wave array ... since the frequency
-    // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
-    sineWaveIndex++;                 // increment index
-    sineWaveIndex = sineWaveIndex & 511;      // limit index 0..511
+    // limit index 0..511
+    sineWaveIndex = sineWaveIndex & 511;      
 
   }
   else {
