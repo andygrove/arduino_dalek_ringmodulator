@@ -35,9 +35,9 @@ int intervalCounter = 0;
 
 // interrupt variables accessed globally
 volatile boolean f_sample;
-volatile byte badc0;
-volatile byte badc1;
+volatile byte audioInput;
 volatile byte ibb;
+
 int cnta;
 int ii;
 int icnt;
@@ -126,7 +126,7 @@ void loop()
     
     bb=dd[icnt] ;           // get the sinewave buffervalue on indexposition and substract dc
     iw = bb-mid;
-    iw1= mid- badc1;        // get audiosignal and substract dc
+    iw1= mid- audioInput;        // get audiosignal and substract dc
   
     iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
     bb = iw+mid;            // add dc value again
@@ -140,7 +140,7 @@ void loop()
   }
   else {
     // pass through input without any modification - good for initial testing!
-    bb = badc1;
+    bb = audioInput;
   }
 
   // write the output
@@ -181,7 +181,7 @@ ISR(TIMER2_OVF_vect) {
   
   if (++intervalCounter==4) {
     intervalCounter = 0;
-    badc1=ADCH;                    // get ADC channel 1
+    audioInput=ADCH;                    // get ADC channel 1
     f_sample=true;
     ibb++; 
     ibb--; 
