@@ -48,24 +48,15 @@ byte bb;
 
 byte sineWave[512];  // Audio Memory Array 8-Bit
 
-// not currently used
-//volatile unsigned long phaccu;   // pahse accumulator
-//volatile unsigned long tword_m;  // dds tuning word m
-//double dfreq;
-
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
 
 void setup()
 {
   Serial.begin(57600);        // connect to the serial port
-  Serial.println("Arduino Audio Ringmodulator");
+  Serial.println("Arduino Dalek Voice Changer");
 
   fill_sinewave();        // reload wave after 1 second
-
-  //dfreq = 14.5;  
-//  dfreq = 30;  
-  //tword_m=pow(2,32)*dfreq/refclk;  // calulate DDS new tuning word
 
   // set adc prescaler  to 64 for 19kHz sampling frequency
   cbi(ADCSRA, ADPS2);
@@ -102,11 +93,10 @@ void setup()
   //cli();                         // disable interrupts to avoid distortion
   cbi (TIMSK0,TOIE0);              // disable Timer0 !!! delay is off now
   sbi (TIMSK2,TOIE2);              // enable Timer2 Interrupt
-  
-  pinMode(9, OUTPUT);
- 
-}
 
+  // pin 9 is for the dome lights  
+  pinMode(9, OUTPUT);
+}
 
 
 void loop()
@@ -118,12 +108,17 @@ void loop()
 
   if (enableRingMod) {
     
-    bb=sineWave[sineWaveIndex] ;           // get the sinewave buffervalue on indexposition and substract dc
-    iw = bb-127;
-    iw1= 127- audioInput;        // get audiosignal and substract dc
+    // get the sinewave buffervalue on indexposition and substract dc so it is in the range -127 .. +127
+    iw = sineWave[sineWaveIndex] - 127;
+    
+    // get audiosignal and substract dc so it is in the range -127 .. +127
+    iw1 = 127 - audioInput;        
   
-    iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
-    audioOutput = iw+127;            // add dc value again
+    // multiply sine and audio and resale to 255 max value
+    iw  = iw * iw1 / 256;    
+    
+    // add dc value again
+    audioOutput = iw+127;            
   
     // move one position in the 512 sine wave array ... since the frequency
     // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
