@@ -42,10 +42,6 @@ volatile byte ibb;
 int sineWaveIndex;
 
 byte light;
-float pi = 3.141592;
-float dx ;
-float fd ;
-float fcnt;
 int iw;
 int iw1;
 byte bb;
@@ -59,8 +55,6 @@ byte sineWave[512];  // Audio Memory Array 8-Bit
 
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
-
-int mid = 96;
 
 void setup()
 {
@@ -125,17 +119,16 @@ void loop()
   if (enableRingMod) {
     
     bb=sineWave[sineWaveIndex] ;           // get the sinewave buffervalue on indexposition and substract dc
-    iw = bb-mid;
-    iw1= mid- audioInput;        // get audiosignal and substract dc
+    iw = bb-127;
+    iw1= 127- audioInput;        // get audiosignal and substract dc
   
     iw  = iw * iw1/ 256;    // multiply sine and audio and resale to 255 max value
-    audioOutput = iw+mid;            // add dc value again
+    audioOutput = iw+127;            // add dc value again
   
     // move one position in the 512 sine wave array ... since the frequency
     // is 15 KHz this means the sine wave is around 30 Hz (30 x 512 = approx 15000 = 15 KHz)
     sineWaveIndex++;                 // increment index
     sineWaveIndex = sineWaveIndex & 511;      // limit index 0..511
-    // write to pin associated with timer 2 (10 or 11 depending on board)
 
   }
   else {
@@ -143,13 +136,13 @@ void loop()
     audioOutput = audioInput;
   }
 
-  // write the output
+  // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=audioOutput;          
 
-  // trigger dome lights if output signal above some threshold (130 works
-  // for me, but I'd like to make this variable based on a pot input so 
+  // trigger dome lights if output signal above some threshold (hard-coded 
+  // for now, but I'd like to make this variable based on a pot input so 
   // it can be adjusted easily)
-  if (audioOutput > 130 && audioOutput > light) {
+  if (audioOutput > 180 && audioOutput > light) {
     light = audioOutput;
   }
 
@@ -164,6 +157,10 @@ void loop()
 
 //******************************************************************
 void fill_sinewave(){
+  float pi = 3.141592;
+  float dx ;
+  float fd ;
+  float fcnt;
   dx=2 * pi / 512;                    // fill the 512 byte bufferarry
   for (iw = 0; iw <= 511; iw++){      // with  50 periods sinewawe
     fd= 127*sin(fcnt);                // fundamental tone
