@@ -122,8 +122,8 @@ void loop()
     // multiply sine and audio and resale to 255 max value
     iw  = iw * iw1 / 256;    
     
-    // add dc value again
-    audioOutput = iw+127;            
+    // amplify then add dc value again
+    audioOutput = iw * 1 + 127;            
   
     // limit index 0..511
     sineWaveIndex = sineWaveIndex & 511;      
@@ -148,6 +148,7 @@ void loop()
   if (sineWaveIndex%10==0 && light>0) {
     light--;
   }
+ // light = 255;
 
   analogWrite(9, light);
 
