@@ -1,10 +1,13 @@
 /* Arduino Ring Modulator for Dalek voice effect
  *
- * Written by Andy Grove
+ * Originally written by Andy Grove in Feb 2013.
  * 
  * Takes mic/line input from analog pin 1 and mixes this signal with a
  * sine wave then plays the output to digital pin 10 or 11 depending on
  * the model of Arduino being used (10 on Mega 2560, 11 on most other boards).
+ *
+ * BE SURE TO UNCOMMENT THE CORRECT #defines FOR THE BOARD YOU ARE USING! THEY
+ * ARE JUST BELOW THIS COMMENT BLOCK.
  *
  * Adapted from example code written by Martin Nawrath nawrath@khm.de
  * http://interface.khm.de/index.php/lab/experiments/arduino-realtime-audio-processing/
@@ -16,8 +19,21 @@
  * web site (requires a free account).
  *
  * http://www.projectdalek.com/index.php?showtopic=9746
+ *
+ * To connect with me on Google+:
+ * https://www.google.com/+AndyGrove73
  */
  
+// use these values if you are using an Arduino Uno R3
+#define DDRB_NUM 3 // this causes pin 11 to be used for audio output
+
+// use these values if you are using an Arduino Mega 2560 R3
+//#define DDRB_NUM 4 // this causes pin 10 to be used for audio output
+
+// pin to use for dome lights (LEDs)
+#define DOME_LIGHT_PIN 9
+
+// this is useful for testing - set this to false to pass voice through without modification
 boolean enableRingMod = true;
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -90,15 +106,14 @@ void setup()
   cbi (TCCR2B, CS22);
 
   // Timer2 PWM Port Enable
-  //sbi(DDRB,3);                    // set digital pin 11 to output on Uno
-  sbi(DDRB,4);                    // set digital pin 10 to output on Mega 2560
+  sbi(DDRB,DDRB_NUM);              
 
   //cli();                         // disable interrupts to avoid distortion
   cbi (TIMSK0,TOIE0);              // disable Timer0 !!! delay is off now
   sbi (TIMSK2,TOIE2);              // enable Timer2 Interrupt
 
-  // pin 9 is for the dome lights  
-  pinMode(9, OUTPUT);
+  // dome lights  
+  pinMode(DOME_LIGHT_PIN, OUTPUT);
 }
 
 
