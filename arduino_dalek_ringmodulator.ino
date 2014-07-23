@@ -35,18 +35,11 @@
 // this is useful for testing - set this to false to pass voice through without modification
 boolean enableRingMod = true;
 
+// use this multiplier to boost the output volume (may or may not be required depending on the mic volume)
+float outputAmplifier = 1.0f;
+
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-
-// table of 256 sine values / one sine period / stored in flash memory
-PROGMEM  prog_uchar sine256[]  = {
-  127,130,133,136,139,143,146,149,152,155,158,161,164,167,170,173,176,178,181,184,187,190,192,195,198,200,203,205,208,210,212,215,217,219,221,223,225,227,229,231,233,234,236,238,239,240,
-  242,243,244,245,247,248,249,249,250,251,252,252,253,253,253,254,254,254,254,254,254,254,253,253,253,252,252,251,250,249,249,248,247,245,244,243,242,240,239,238,236,234,233,231,229,227,225,223,
-  221,219,217,215,212,210,208,205,203,200,198,195,192,190,187,184,181,178,176,173,170,167,164,161,158,155,152,149,146,143,139,136,133,130,127,124,121,118,115,111,108,105,102,99,96,93,90,87,84,81,78,
-  76,73,70,67,64,62,59,56,54,51,49,46,44,42,39,37,35,33,31,29,27,25,23,21,20,18,16,15,14,12,11,10,9,7,6,5,5,4,3,2,2,1,1,1,0,0,0,0,0,0,0,1,1,1,2,2,3,4,5,5,6,7,9,10,11,12,14,15,16,18,20,21,23,25,27,29,31,
-  33,35,37,39,42,44,46,49,51,54,56,59,62,64,67,70,73,76,78,81,84,87,90,93,96,99,102,105,108,111,115,118,121,124
-
-};
 
 // we want to take samples on every nth interval
 int intervalCounter = 0;
@@ -64,14 +57,15 @@ int iw;
 int iw1;
 byte bb;
 
-byte sineWave[512];  // Audio Memory Array 8-Bit
+// Audio Memory Array 8-Bit containing sine wave
+byte sineWave[512];  
 
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
 
 void setup()
 {
-  Serial.begin(57600);        // connect to the serial port
+  Serial.begin(9600);        // connect to the serial port
   Serial.println("Arduino Dalek Voice Changer");
 
   fill_sinewave();        // reload wave after 1 second
@@ -134,11 +128,11 @@ void loop()
     // get audiosignal and substract dc so it is in the range -127 .. +127
     iw1 = 127 - audioInput;        
   
-    // multiply sine and audio and resale to 255 max value
-    iw  = iw * iw1 / 256;    
+    // multiply sine and audio and rescale
+    iw  = iw * iw1 / 127;    
     
     // amplify then add dc value again
-    audioOutput = iw + 127;            
+    audioOutput = outputAmplifier * iw + 127;
   
     // limit index 0..511
     sineWaveIndex = sineWaveIndex & 511;      
@@ -148,7 +142,7 @@ void loop()
     // pass through input without any modification - good for initial testing!
     audioOutput = audioInput;
   }
-
+  
   // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=audioOutput;          
 
@@ -172,7 +166,9 @@ void loop()
 
 } // loop
 
-//******************************************************************
+/**
+ * Generates one complete sine wave into the 512 byte array.
+ */
 void fill_sinewave(){
   float pi = 3.141592;
   float dx ;
@@ -184,7 +180,11 @@ void fill_sinewave(){
     fcnt=fcnt+dx;                     // in the range of 0 to 2xpi  and 1/512 increments
     bb=127+fd;                        // add dc offset to sinewawe 
     sineWave[iw]=bb;                        // write value into array
-
+    // uncomment this to see the sine wave numbers in the serial monitor
+    /*
+    Serial.print("Sine: ");
+    Serial.println(bb);
+    */
   }
 }
 
