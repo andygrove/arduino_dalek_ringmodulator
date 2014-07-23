@@ -17,7 +17,6 @@
  *
  * Please post any questions or comments to the following forum on the Project Dalek 
  * web site (requires a free account).
- *
  * http://www.projectdalek.com/index.php?showtopic=9746
  *
  * To connect with me on Google+:
@@ -139,7 +138,7 @@ void loop()
     iw  = iw * iw1 / 256;    
     
     // amplify then add dc value again
-    audioOutput = iw * 1 + 127;            
+    audioOutput = iw + 127;            
   
     // limit index 0..511
     sineWaveIndex = sineWaveIndex & 511;      
@@ -164,7 +163,6 @@ void loop()
   if (sineWaveIndex%10==0 && light>0) {
     light--;
   }
- // light = 255;
 
   // write new PWM signal to the LEDs once every 1000 times through this loop (so approximately 15 times per second)
   if (++counter == 1000) {
