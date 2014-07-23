@@ -1,6 +1,6 @@
 /* Arduino Ring Modulator for Dalek voice effect
  *
- * Originally written by Andy Grove in Feb 2013.
+ * Originally written by Andy Grove in September 2012.
  * 
  * Takes mic/line input from analog pin 1 and mixes this signal with a
  * sine wave then plays the output to digital pin 10 or 11 depending on
@@ -24,11 +24,11 @@
  * https://www.google.com/+AndyGrove73
  */
  
-// use these values if you are using an Arduino Uno R3
-#define DDRB_NUM 3 // this causes pin 11 to be used for audio output
+// use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
+#define DDRB_NUM 3
 
-// use these values if you are using an Arduino Mega 2560 R3
-//#define DDRB_NUM 4 // this causes pin 10 to be used for audio output
+// use these values if you are using an Arduino Mega 2560 R3 (pin 10 for audio output)
+//#define DDRB_NUM 4
 
 // pin to use for dome lights (LEDs)
 #define DOME_LIGHT_PIN 9
@@ -116,6 +116,7 @@ void setup()
   pinMode(DOME_LIGHT_PIN, OUTPUT);
 }
 
+int counter = 0;
 
 void loop()
 {
@@ -165,7 +166,11 @@ void loop()
   }
  // light = 255;
 
-  analogWrite(9, light);
+  // write new PWM signal to the LEDs once every 1000 times through this loop (so approximately 15 times per second)
+  if (++counter == 1000) {
+    counter = 0;
+    analogWrite(9, light);
+  }
 
 } // loop
 
