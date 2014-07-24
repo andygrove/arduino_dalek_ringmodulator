@@ -1,11 +1,11 @@
 arduino_dalek_ringmodulator
 ===========================
 
-Ring modulator sketch for Arduino Uno or Mega.
+This git repo contains Arduino code for a simulated ring modulator which mixes audio input with a 30Hz sine wave to produce the familiar Dalek voice effect.
 
-You will need the following hardware components:
+In addition to an Arduino Uno or Mega, you will need the following hardware components:
 
-- SparkFun Electec Mic
+- SparkFun Electret Microphone Breakout (https://www.sparkfun.com/products/9964)
 - Active speakers i.e. PC speakers with built in amplifier
 - 2 x 10uF electrolytic capacitors
 - 2 x 220 ohm resistor for LEDs
