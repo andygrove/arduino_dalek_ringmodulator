@@ -12,7 +12,9 @@ In addition to an Arduino Uno or Mega, you will need the following hardware comp
 - 2 x LED for dome lights
 - 1 x 330 ohm resistor for low pass filter
 
-I will be checking in Eagle schematics *very* soon (July 2014).
+The latest schematics image can be found in the repo or at this link:
+
+https://github.com/andygrove/arduino_dalek_ringmodulator/blob/master/eagle_schematics.png
 
 Please post any questions or comments to the following forum on the Project Dalek web site (requires a free account).
 
