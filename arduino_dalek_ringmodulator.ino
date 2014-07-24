@@ -35,6 +35,9 @@
 // this is useful for testing - set this to false to pass voice through without modification
 boolean enableRingMod = true;
 
+// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 512 = 30 Hz, 256 = 60Hz, 341=50Hz.
+#define NUM_SINE_WAVE_POINTS 512
+
 // use this multiplier to boost the output volume (may or may not be required depending on the mic volume)
 float outputAmplifier = 1.0f;
 
@@ -58,7 +61,7 @@ int iw1;
 byte bb;
 
 // Audio Memory Array 8-Bit containing sine wave
-byte sineWave[512];  
+byte sineWave[NUM_SINE_WAVE_POINTS];  
 
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
@@ -113,9 +116,13 @@ int counter = 0;
 
 void loop()
 {
-  while (!f_sample) {     // wait for Sample Value from ADC
-  }                       // Cycle 15625 KHz = 64uSec 
+  // wait for Sample Value from ADC
+  // Cycle 15625 KHz = 64uSec 
+  while (!f_sample) {     
+  }                       
 
+  // reset the flag so that the next call to loop will wait until the 
+  // interrupt code has obtained a new sample
   f_sample=false;
 
   if (enableRingMod) {
@@ -128,15 +135,17 @@ void loop()
     // get audiosignal and substract dc so it is in the range -127 .. +127
     iw1 = 127 - audioInput;        
   
-    // multiply sine and audio and rescale
+    // multiply sine and audio and rescale so still in range -127 .. +127
     iw  = iw * iw1 / 127;    
     
-    // amplify then add dc value again
+    // amplify (if necessary) then add 127 so back in range of 0 .. 255
     audioOutput = outputAmplifier * iw + 127;
   
-    // limit index 0..511
-    sineWaveIndex = sineWaveIndex & 511;      
-
+    // limit index
+    if (sineWaveIndex > NUM_SINE_WAVE_POINTS) {
+      sineWaveIndex = 0;
+    }
+    
   }
   else {
     // pass through input without any modification - good for initial testing!
@@ -174,12 +183,12 @@ void fill_sinewave(){
   float dx ;
   float fd ;
   float fcnt;
-  dx=2 * pi / 512;                    // fill the 512 byte bufferarry
-  for (iw = 0; iw <= 511; iw++){      // with  50 periods sinewawe
+  dx=2 * pi / NUM_SINE_WAVE_POINTS;   // fill the  byte bufferarry
+  for (iw = 0; iw < NUM_SINE_WAVE_POINTS; iw++){      // with 50 periods sinewawe
     fd= 127*sin(fcnt);                // fundamental tone
     fcnt=fcnt+dx;                     // in the range of 0 to 2xpi  and 1/512 increments
     bb=127+fd;                        // add dc offset to sinewawe 
-    sineWave[iw]=bb;                        // write value into array
+    sineWave[iw]=bb;                  // write value into array
     // uncomment this to see the sine wave numbers in the serial monitor
     /*
     Serial.print("Sine: ");
@@ -188,22 +197,33 @@ void fill_sinewave(){
   }
 }
 
-
-//******************************************************************
-// Timer2 Interrupt Service at 62.5 KHz
-// here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 4 = 15625 Hz
-// runtime : xxxx microseconds
+/**
+ * Timer2 Interrupt Service at 62.5 KHz 
+ * here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 4 = 15625 Hz
+ * runtime : xxxx microseconds
+ */
 ISR(TIMER2_OVF_vect) {
   
+  // take a sample every 4th time through
   if (++intervalCounter==4) {
+    
+    // reset the interval counter
     intervalCounter = 0;
-    audioInput=ADCH;                    // get ADC channel 1
+
+    // get ADC channel 1 most significant 8 bits (0..255)
+    audioInput = ADCH;
+
+    // set flag so that loop() can continue and process the signal
     f_sample=true;
+    
+    // short delay before start conversion (I don't understand why we need this but it was in the original code that I used)
     ibb++; 
     ibb--; 
     ibb++; 
-    ibb--;    // short delay before start conversion
-    sbi(ADCSRA,ADSC);              // start next conversion
+    ibb--;    
+    
+    // start next conversion
+    sbi(ADCSRA,ADSC);              
   }
 
 }
