@@ -14,6 +14,7 @@ In addition to an Arduino Uno or Mega, you will need the following hardware comp
 
 The latest schematics image can be found in the repo or at this link:
 
+https://github.com/andygrove/arduino_dalek_ringmodulator/blob/master/eagle_schematics.png
 
 Please post any questions or comments to the following forum on the Project Dalek web site (requires a free account).
 
