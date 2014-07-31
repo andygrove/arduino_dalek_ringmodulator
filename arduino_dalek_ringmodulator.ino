@@ -35,7 +35,7 @@
 // this is useful for testing - set this to false to pass voice through without modification
 boolean enableRingMod = true;
 
-// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 1024 = 30 Hz, 512 = 60Hz
+// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 512 = 30 Hz, 256 = 60Hz
 #define NUM_SINE_WAVE_POINTS 512
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -110,13 +110,17 @@ void setup()
 }
 
 int counter = 0;
+int nextSample = 0;
 
 void loop()
 {
   // wait for Sample Value from ADC
   // Cycle 15625 KHz = 64uSec 
   while (!f_sample) {     
-  }                       
+  }                
+
+  // get the sample and convert from 3.3V to 5V by multiplying by 1.5
+  nextSample = audioInput * 1.5;  
 
   // reset the flag so that the next call to loop will wait until the 
   // interrupt code has obtained a new sample
@@ -130,7 +134,7 @@ void loop()
     iw = sineWave[sineWaveIndex++] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
-    iw1 = 127 - (audioInput * 1.5);        
+    iw1 = 127 - nextSample;        
   
     // multiply sine and audio and rescale so still in range -127 .. +127
     iw  = iw * iw1 / 127;    
@@ -146,13 +150,12 @@ void loop()
   }
   else {
     // pass through input without any modification - good for initial testing!
-    audioOutput = audioInput;
+    audioOutput = nextSample;
   }
   
   // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=audioOutput;          
 
-/*
   // trigger dome lights if output signal above some threshold (hard-coded 
   // for now, but I'd like to make this variable based on a pot input so 
   // it can be adjusted easily)
@@ -170,7 +173,6 @@ void loop()
     counter = 0;
     analogWrite(9, light);
   }
-  */
 
 } // loop
 
@@ -198,12 +200,11 @@ void fill_sinewave(){
 
 /**
  * Timer2 Interrupt Service at 62.5 KHz 
- * here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 2 = 31.25 KHz
  * runtime : xxxx microseconds
  */
 ISR(TIMER2_OVF_vect) {
   
-  // take a sample every 2nd time through
+  // take a sample every 4th time through, therefore audio is sampled in a rate of:  16Mhz / 256 / 4 = 15.625 KHz
   if (++intervalCounter==4) {
     
     // reset the interval counter
