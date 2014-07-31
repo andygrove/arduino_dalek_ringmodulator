@@ -35,11 +35,8 @@
 // this is useful for testing - set this to false to pass voice through without modification
 boolean enableRingMod = true;
 
-// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 512 = 30 Hz, 256 = 60Hz, 341=50Hz.
+// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 1024 = 30 Hz, 512 = 60Hz
 #define NUM_SINE_WAVE_POINTS 512
-
-// use this multiplier to boost the output volume (may or may not be required depending on the mic volume)
-float outputAmplifier = 1.0f;
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -133,16 +130,16 @@ void loop()
     iw = sineWave[sineWaveIndex++] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
-    iw1 = 127 - audioInput;        
+    iw1 = 127 - (audioInput * 1.5);        
   
     // multiply sine and audio and rescale so still in range -127 .. +127
     iw  = iw * iw1 / 127;    
     
     // amplify (if necessary) then add 127 so back in range of 0 .. 255
-    audioOutput = outputAmplifier * iw + 127;
+    audioOutput = iw + 127;
   
     // limit index
-    if (sineWaveIndex > NUM_SINE_WAVE_POINTS) {
+    if (sineWaveIndex >= NUM_SINE_WAVE_POINTS) {
       sineWaveIndex = 0;
     }
     
@@ -155,6 +152,7 @@ void loop()
   // write to pin associated with timer 2 (10 or 11 depending on board)
   OCR2A=audioOutput;          
 
+/*
   // trigger dome lights if output signal above some threshold (hard-coded 
   // for now, but I'd like to make this variable based on a pot input so 
   // it can be adjusted easily)
@@ -172,6 +170,7 @@ void loop()
     counter = 0;
     analogWrite(9, light);
   }
+  */
 
 } // loop
 
@@ -199,12 +198,12 @@ void fill_sinewave(){
 
 /**
  * Timer2 Interrupt Service at 62.5 KHz 
- * here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 4 = 15625 Hz
+ * here the audio and pot signal is sampled in a rate of:  16Mhz / 256 / 2 = 31.25 KHz
  * runtime : xxxx microseconds
  */
 ISR(TIMER2_OVF_vect) {
   
-  // take a sample every 4th time through
+  // take a sample every 2nd time through
   if (++intervalCounter==4) {
     
     // reset the interval counter
@@ -215,12 +214,6 @@ ISR(TIMER2_OVF_vect) {
 
     // set flag so that loop() can continue and process the signal
     f_sample=true;
-    
-    // short delay before start conversion (I don't understand why we need this but it was in the original code that I used)
-    ibb++; 
-    ibb--; 
-    ibb++; 
-    ibb--;    
     
     // start next conversion
     sbi(ADCSRA,ADSC);              
