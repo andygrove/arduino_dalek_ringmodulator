@@ -32,8 +32,13 @@
 // pin to use for dome lights (LEDs)
 #define DOME_LIGHT_PIN 9
 
-// this is useful for testing - set this to false to pass voice through without modification
-boolean enableRingMod = true;
+// the code now supports some different effects modes, mostly to help with debugging
+#define MODE_NO_EFFECT 1 // this mode passes the mic input directly to the audio out without modification
+#define MODE_RING_MOD  2 // this is the default ring modulator mode where the mic input is mixed with a sine wave then written to audio out
+#define MODE_SINE_WAVE 3 // this mode writes the sine wave directly to audio out
+
+// select which mode you want here
+const int mode = MODE_RING_MOD;
 
 // changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 512 = 30 Hz, 256 = 60Hz
 #define NUM_SINE_WAVE_POINTS 512
@@ -50,7 +55,7 @@ volatile byte audioInput;
 volatile byte audioOutput;
 volatile byte ibb;
 
-int sineWaveIndex;
+int sineWaveIndex = 0;
 
 byte light;
 int iw;
@@ -68,7 +73,8 @@ void setup()
   Serial.begin(9600);        // connect to the serial port
   Serial.println("Arduino Dalek Voice Changer");
 
-  fill_sinewave();        // reload wave after 1 second
+  // generate sine wave values
+  fill_sinewave();
 
   // set adc prescaler  to 64 for 19kHz sampling frequency
   cbi(ADCSRA, ADPS2);
@@ -126,7 +132,17 @@ void loop()
   // interrupt code has obtained a new sample
   f_sample=false;
 
-  if (enableRingMod) {
+  if (mode == MODE_NO_EFFECT) {
+    // pass through input without any modification - good for initial testing!
+    audioOutput = nextSample;
+    
+  } else if (mode == MODE_SINE_WAVE) {
+    // pass sine wave directly to audio out
+    audioOutput = sineWave[sineWaveIndex++];
+    if (sineWaveIndex >= NUM_SINE_WAVE_POINTS) {
+      sineWaveIndex = 0;
+    }
+  } else if (mode == MODE_RING_MOD) {
     
     // get the next sinewave value and substract dc so it is in the range -127 .. +127
     // note that this code runs at 15625 Hz (see notes in timer function for explanation)
@@ -147,10 +163,6 @@ void loop()
       sineWaveIndex = 0;
     }
     
-  }
-  else {
-    // pass through input without any modification - good for initial testing!
-    audioOutput = nextSample;
   }
   
   // write to pin associated with timer 2 (10 or 11 depending on board)
@@ -215,6 +227,12 @@ ISR(TIMER2_OVF_vect) {
 
     // set flag so that loop() can continue and process the signal
     f_sample=true;
+    
+    // still not sure if this is needed
+    ibb++;
+    ibb--;
+    ibb++;
+    ibb--;
     
     // start next conversion
     sbi(ADCSRA,ADSC);              
