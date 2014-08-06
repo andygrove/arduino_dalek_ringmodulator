@@ -40,8 +40,15 @@
 // select which mode you want here
 const int mode = MODE_RING_MOD;
 
-// changing NUM_SINE_WAVE_POINTS will change the frequency of the sine wave. 512 = 30 Hz, 256 = 60Hz
-#define NUM_SINE_WAVE_POINTS 512
+// const double refclk=31372.549;  // =16MHz / 510
+const double refclk=31376.6;      // measured
+
+// main loop runs ~15,000 times per second and there are 1,500 sine wave data points
+// therefore stepping throuh in increments of 1 results in 10 Hz (sine wave is cycled through 10 times in one second)
+// frequency = 10 x increment
+#define NUM_SINE_WAVE_POINTS 1500
+#define MIN_INCREMENT 1 // 10 Hz
+#define MAX_INCREMENT 5 // 50 Hz
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -52,8 +59,12 @@ int intervalCounter = 0;
 // interrupt variables accessed globally
 volatile boolean f_sample;
 volatile byte audioInput;
+volatile byte pot;
 volatile byte audioOutput;
 volatile byte ibb;
+
+// how fast to step through the sine wave values... controlled by pot
+int sineWaveIncrement = 1;
 
 int sineWaveIndex = 0;
 
@@ -64,9 +75,6 @@ byte bb;
 
 // Audio Memory Array 8-Bit containing sine wave
 byte sineWave[NUM_SINE_WAVE_POINTS];  
-
-// const double refclk=31372.549;  // =16MHz / 510
-const double refclk=31376.6;      // measured
 
 void setup()
 {
@@ -137,32 +145,33 @@ void loop()
     audioOutput = nextSample;
     
   } else if (mode == MODE_SINE_WAVE) {
-    // pass sine wave directly to audio out
-    audioOutput = sineWave[sineWaveIndex++];
+    // get the next point from the sine wave data
+    sineWaveIndex += sineWaveIncrement;
     if (sineWaveIndex >= NUM_SINE_WAVE_POINTS) {
-      sineWaveIndex = 0;
+      sineWaveIndex -= NUM_SINE_WAVE_POINTS;
     }
+    // pass sine wave directly to audio out
+    audioOutput = sineWave[sineWaveIndex];
   } else if (mode == MODE_RING_MOD) {
     
+    // get the next point from the sine wave data
+    sineWaveIndex += sineWaveIncrement;
+    if (sineWaveIndex >= NUM_SINE_WAVE_POINTS) {
+      sineWaveIndex -= NUM_SINE_WAVE_POINTS;
+    }
+
     // get the next sinewave value and substract dc so it is in the range -127 .. +127
-    // note that this code runs at 15625 Hz (see notes in timer function for explanation)
-    // and since the sine wave array is 512 long, the sine wave is 15625/512 = 30.5 Hz
-    iw = sineWave[sineWaveIndex++] - 127;
+    iw = sineWave[sineWaveIndex] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
     iw1 = 127 - nextSample;        
   
     // multiply sine and audio and rescale so still in range -127 .. +127
-    iw  = iw * iw1 / 127;    
+    //iw  = iw * iw1 / 127;    
+    iw  = iw * iw1 / 256;    // orignal code had 256.. still not sure about this
     
     // amplify (if necessary) then add 127 so back in range of 0 .. 255
     audioOutput = iw + 127;
-  
-    // limit index
-    if (sineWaveIndex >= NUM_SINE_WAVE_POINTS) {
-      sineWaveIndex = 0;
-    }
-    
   }
   
   // write to pin associated with timer 2 (10 or 11 depending on board)
@@ -176,7 +185,7 @@ void loop()
   }
 
   // fade away to simulate incandescent light bulb
-  if (sineWaveIndex%10==0 && light>0) {
+  if (counter%10==0 && light>0) {
     light--;
   }
 
@@ -184,6 +193,10 @@ void loop()
   if (++counter == 1000) {
     counter = 0;
     analogWrite(9, light);
+    
+    // also update sine wave increment based on pot value
+    // 1 through 10 translates to 10 Hz through 100 Hz in 10 Hz increments
+    sineWaveIncrement = map(pot, 0, 255, MIN_INCREMENT, MAX_INCREMENT);
   }
 
 } // loop
@@ -216,19 +229,32 @@ void fill_sinewave(){
  */
 ISR(TIMER2_OVF_vect) {
   
-  // take a sample every 4th time through, therefore audio is sampled in a rate of:  16Mhz / 256 / 4 = 15.625 KHz
-  if (++intervalCounter==4) {
-    
-    // reset the interval counter
-    intervalCounter = 0;
+  intervalCounter++;
 
-    // get ADC channel 1 most significant 8 bits (0..255)
-    audioInput = ADCH;
+  if (intervalCounter>1) {
+    if (intervalCounter==2) {
+      // get pot reading to control frequency
+      pot = ADCH;
+      // set multiplexer to channel 1
+      sbi(ADMUX,MUX0);               
+    }
+    else if (intervalCounter==4) {
+      // take a sample every 4th time through, therefore audio is sampled in a rate of:  16Mhz / 256 / 4 = 15.625 KHz
+      
+      // reset the interval counter
+      intervalCounter = 0;
+  
+      // get ADC channel 1 most significant 8 bits (0..255)
+      audioInput = ADCH;
 
-    // set flag so that loop() can continue and process the signal
-    f_sample=true;
-    
-    // still not sure if this is needed
+      // set multiplexer to channel 0
+      cbi(ADMUX,MUX0);               
+  
+      // set flag so that loop() can continue and process the signal
+      f_sample=true;
+    }
+      
+    // short delay before the next conversion
     ibb++;
     ibb--;
     ibb++;
