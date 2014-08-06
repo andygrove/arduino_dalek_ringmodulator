@@ -60,8 +60,9 @@ int intervalCounter = 0;
 volatile boolean f_sample;
 volatile byte audioInput;
 volatile byte pot;
-volatile byte audioOutput;
 volatile byte ibb;
+
+byte audioOutput;
 
 // how fast to step through the sine wave values... controlled by pot
 int sineWaveIncrement = 1;
@@ -133,12 +134,12 @@ void loop()
   while (!f_sample) {     
   }                
 
-  // get the sample and convert from 3.3V to 5V by multiplying by 1.5
-  nextSample = audioInput * 1.5;  
-
   // reset the flag so that the next call to loop will wait until the 
   // interrupt code has obtained a new sample
   f_sample=false;
+
+  // if the mic is powered from 3.3V then convert the input signal to 5V by multiplying by 1.5
+  nextSample = audioInput * 1.5;  
 
   if (mode == MODE_NO_EFFECT) {
     // pass through input without any modification - good for initial testing!
@@ -167,8 +168,8 @@ void loop()
     iw1 = 127 - nextSample;        
   
     // multiply sine and audio and rescale so still in range -127 .. +127
-    //iw  = iw * iw1 / 127;    
-    iw  = iw * iw1 / 256;    // orignal code had 256.. still not sure about this
+    iw  = iw * iw1 / 127;    
+    //iw  = iw * iw1 / 256;    // orignal code had 256.. still not sure about this
     
     // amplify (if necessary) then add 127 so back in range of 0 .. 255
     audioOutput = iw + 127;
