@@ -11,6 +11,7 @@ In addition to an Arduino Uno or Mega, you will need the following hardware comp
 - 2 x 220 ohm resistor for LEDs
 - 2 x LED for dome lights
 - 1 x 330 ohm resistor for low pass filter
+- Optional 10K potentionmeter to adjust the sine wave frequency
 
 The latest schematics image can be found in the repo or at this link:
 

@@ -2,9 +2,12 @@
  *
  * Originally written by Andy Grove in September 2012.
  * 
- * Takes mic/line input from analog pin 1 and mixes this signal with a
+ * Takes mic/line input from analog pin 1 (A1) and mixes this signal with a
  * sine wave then plays the output to digital pin 10 or 11 depending on
  * the model of Arduino being used (10 on Mega 2560, 11 on most other boards).
+ *
+ * There is now an optional to connect a potentiometer to pin A0 to control the 
+ * sine wave frequency.
  *
  * BE SURE TO UNCOMMENT THE CORRECT #defines FOR THE BOARD YOU ARE USING! THEY
  * ARE JUST BELOW THIS COMMENT BLOCK.
