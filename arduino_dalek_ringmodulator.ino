@@ -36,6 +36,7 @@
 #define MODE_NO_EFFECT 1 // this mode passes the mic input directly to the audio out without modification
 #define MODE_RING_MOD  2 // this is the default ring modulator mode where the mic input is mixed with a sine wave then written to audio out
 #define MODE_SINE_WAVE 3 // this mode writes the sine wave directly to audio out
+#define MODE_EXPERIMENTAL 4 // trying out new stuff here
 
 // select which mode you want here
 const int mode = MODE_RING_MOD;
@@ -43,12 +44,28 @@ const int mode = MODE_RING_MOD;
 // const double refclk=31372.549;  // =16MHz / 510
 const double refclk=31376.6;      // measured
 
-// main loop runs ~15,000 times per second and there are 1,500 sine wave data points
-// therefore stepping throuh in increments of 1 results in 10 Hz (sine wave is cycled through 10 times in one second)
-// frequency = 10 x increment
-#define NUM_SINE_WAVE_POINTS 1500
+// constants for common frequencies ... calculation is: n = 31376/2/frequency
+#define FREQUENCY_15_HZ 1045 // 
+#define FREQUENCY_25_HZ  612 // actually 25.64 (NSD)
+#define FREQUENCY_30_HZ  523 // Genesis
+
+// for variable frequency controlled by a pot, comment out this next line
+#define FIXED_FREQ  FREQUENCY_30_HZ
+
+#ifdef FIXED_FREQ
+#define NUM_SINE_WAVE_POINTS FREQUENCY_30_HZ  
+#else
+#define NUM_SINE_WAVE_POINTS 1568 // refclk/2/10
 #define MIN_INCREMENT 1 // 10 Hz
 #define MAX_INCREMENT 5 // 50 Hz
+#endif
+
+// Audio Memory Array 8-Bit containing sine wave
+byte sineWave[NUM_SINE_WAVE_POINTS];  
+
+// the dome light will come on when the audio signal goes above this number..a quiet signal 
+// is around 127 so this number needs to be > 127 and < 255
+const int domeLightThreshold = 180;
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -73,9 +90,6 @@ byte light;
 int iw;
 int iw1;
 byte bb;
-
-// Audio Memory Array 8-Bit containing sine wave
-byte sineWave[NUM_SINE_WAVE_POINTS];  
 
 void setup()
 {
@@ -138,8 +152,10 @@ void loop()
   // interrupt code has obtained a new sample
   f_sample=false;
 
-  // if the mic is powered from 3.3V then convert the input signal to 5V by multiplying by 1.5
-  nextSample = audioInput * 1.5;  
+  // if the mic is powered from 3.3V then convert the input signal to 5V by multiplying by ~1.5
+  // you may need to adjust this number ... if you see a sine wave output when the mic is quiet
+  // then you likely need to adjust this
+  nextSample = audioInput * 1.457;  
 
   if (mode == MODE_NO_EFFECT) {
     // pass through input without any modification - good for initial testing!
@@ -165,11 +181,10 @@ void loop()
     iw = sineWave[sineWaveIndex] - 127;
     
     // get audiosignal and substract dc so it is in the range -127 .. +127
-    iw1 = 127 - nextSample;        
+    iw1 = nextSample - 127;        
   
     // multiply sine and audio and rescale so still in range -127 .. +127
     iw  = iw * iw1 / 127;    
-    //iw  = iw * iw1 / 256;    // orignal code had 256.. still not sure about this
     
     // amplify (if necessary) then add 127 so back in range of 0 .. 255
     audioOutput = iw + 127;
@@ -181,7 +196,7 @@ void loop()
   // trigger dome lights if output signal above some threshold (hard-coded 
   // for now, but I'd like to make this variable based on a pot input so 
   // it can be adjusted easily)
-  if (audioOutput > 180 && audioOutput > light) {
+  if (audioOutput > domeLightThreshold && audioOutput > light) {
     light = audioOutput;
   }
 
@@ -195,9 +210,11 @@ void loop()
     counter = 0;
     analogWrite(9, light);
     
+#ifndef FIXED_FREQ    
     // also update sine wave increment based on pot value
     // 1 through 10 translates to 10 Hz through 100 Hz in 10 Hz increments
     sineWaveIncrement = map(pot, 0, 255, MIN_INCREMENT, MAX_INCREMENT);
+#endif
   }
 
 } // loop
