@@ -9,8 +9,8 @@
  * There is now an optional to connect a potentiometer to pin A0 to control the 
  * sine wave frequency.
  *
- * BE SURE TO UNCOMMENT THE CORRECT #defines FOR THE BOARD YOU ARE USING! THEY
- * ARE JUST BELOW THIS COMMENT BLOCK.
+ * BE SURE TO UNCOMMENT THE CORRECT #defines FOR THE BOARD AND VOLTAGE YOU 
+ * ARE USING! THEY ARE JUST BELOW THIS COMMENT BLOCK!
  *
  * Adapted from example code written by Martin Nawrath nawrath@khm.de
  * http://interface.khm.de/index.php/lab/experiments/arduino-realtime-audio-processing/
@@ -26,6 +26,12 @@
  * https://www.google.com/+AndyGrove73
  */
  
+// IMPORTANT! MAKE SURE YOU CHOOSE THE CORRECT VALUES HERE, ESPECIALLY AREF! USING THE WRONG 
+// VALUES COULD POTENTIONALLY DAMAGE YOUR ARDUINO!!
+
+// if you want to use external AREF then uncomment this line and connect AREF to the reference voltage
+//#define AREF_EXTERNAL
+
 // use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
 #define DDRB_NUM 3
 
@@ -107,9 +113,19 @@ void setup()
   sbi(ADCSRA, ADPS1);
   sbi(ADCSRA, ADPS0);
 
+
   sbi(ADMUX,ADLAR);  // 8-Bit ADC in ADCH Register
-  sbi(ADMUX,REFS0);  // VCC Reference
+
+#ifdef AREF_EXTERNAL
+  // AREF set to external reference voltage (whatever is connected to the AREF pin)
+  cbi(ADMUX,REFS0);
   cbi(ADMUX,REFS1);
+#else
+  // AREF set to VCC (5v on 5V Arduino boards, 3.3V on 3.3V boards)
+  sbi(ADMUX,REFS0);
+  cbi(ADMUX,REFS1);
+#endif
+
   cbi(ADMUX,MUX0);   // Set Input Multiplexer to Channel 0
   cbi(ADMUX,MUX1);
   cbi(ADMUX,MUX2);
@@ -155,10 +171,14 @@ void loop()
   // interrupt code has obtained a new sample
   f_sample=false;
 
+#ifdef AREF_3V
+  nextSample = audioInput;
+#else
   // if the mic is powered from 3.3V then convert the input signal to 5V by multiplying by ~1.5
   // you may need to adjust this number ... if you see a sine wave output when the mic is quiet
   // then you likely need to adjust this
   nextSample = audioInput * 1.457;  
+#endif
 
   if (mode == MODE_NO_EFFECT) {
     // pass through input without any modification - good for initial testing!
@@ -273,6 +293,7 @@ ISR(TIMER2_OVF_vect) {
   
       // set flag so that loop() can continue and process the signal
       f_sample=true;
+   
     }
       
     // short delay before the next conversion
