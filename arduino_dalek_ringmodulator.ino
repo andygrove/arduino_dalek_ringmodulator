@@ -1,4 +1,4 @@
-/* Arduino Ring Modulator for Dalek voice effect
+/* Arduino Ring Modulator a.k.a Dalek Voice Changer
  *
  * Originally written by Andy Grove in September 2012.
  * 
@@ -171,14 +171,8 @@ void loop()
   // interrupt code has obtained a new sample
   f_sample=false;
 
-#ifdef AREF_3V
+  // get next sample
   nextSample = audioInput;
-#else
-  // if the mic is powered from 3.3V then convert the input signal to 5V by multiplying by ~1.5
-  // you may need to adjust this number ... if you see a sine wave output when the mic is quiet
-  // then you likely need to adjust this
-  nextSample = audioInput * 1.457;  
-#endif
 
   if (mode == MODE_NO_EFFECT) {
     // pass through input without any modification - good for initial testing!
@@ -278,13 +272,14 @@ ISR(TIMER2_OVF_vect) {
       pot = ADCH;
       // set multiplexer to channel 1
       sbi(ADMUX,MUX0);               
+
     }
     else if (intervalCounter==4) {
       // take a sample every 4th time through, therefore audio is sampled in a rate of:  16Mhz / 256 / 4 = 15.625 KHz
-      
+
       // reset the interval counter
       intervalCounter = 0;
-  
+      
       // get ADC channel 1 most significant 8 bits (0..255)
       audioInput = ADCH;
 
@@ -295,7 +290,6 @@ ISR(TIMER2_OVF_vect) {
       f_sample=true;
    
     }
-      
     // short delay before the next conversion
     ibb++;
     ibb--;
@@ -303,7 +297,6 @@ ISR(TIMER2_OVF_vect) {
     ibb--;
     
     // start next conversion
-    sbi(ADCSRA,ADSC);              
-  }
-
+    sbi(ADCSRA,ADSC);      
+  }    
 }
