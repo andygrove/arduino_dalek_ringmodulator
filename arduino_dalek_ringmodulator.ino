@@ -274,7 +274,7 @@ ISR(TIMER2_OVF_vect) {
       sbi(ADMUX,MUX0);               
 
     }
-    else if (intervalCounter==4) {
+    else if (intervalCounter==3) {
       // take a sample every 4th time through, therefore audio is sampled in a rate of:  16Mhz / 256 / 4 = 15.625 KHz
 
       // reset the interval counter
