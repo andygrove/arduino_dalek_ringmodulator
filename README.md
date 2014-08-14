@@ -1,7 +1,7 @@
-arduino_dalek_ringmodulator
-===========================
+Arduino Ring Modular a.k.a Dalek Voice Changer
+==============================================
 
-This git repo contains Arduino code for a simulated ring modulator which mixes audio input with a 30Hz sine wave to produce the familiar Dalek voice effect.
+Arduino sketch for a digital ring modulator which mixes audio input with a sine wave to produce the familiar Dalek voice effect.
 
 In addition to an Arduino Uno or Mega, you will need the following hardware components:
 
