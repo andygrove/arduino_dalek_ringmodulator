@@ -30,7 +30,7 @@
 // VALUES COULD POTENTIONALLY DAMAGE YOUR ARDUINO!!
 
 // if you want to use external AREF then uncomment this line and connect AREF to the reference voltage
-//#define AREF_EXTERNAL
+#define AREF_EXTERNAL
 
 // use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
 #define DDRB_NUM 3
