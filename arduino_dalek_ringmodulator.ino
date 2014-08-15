@@ -28,14 +28,16 @@
  * To connect with me on Google+:
  * https://www.google.com/+AndyGrove73
  */
+
+ #include <arduino.h>
  
 // IMPORTANT! MAKE SURE YOU CHOOSE THE CORRECT VALUES HERE, ESPECIALLY AREF! USING THE WRONG 
 // VALUES COULD POTENTIONALLY DAMAGE YOUR ARDUINO!!
 
-// if you have the mic connected to 3.3V then you should also connect AREF to 3.3V and
-// uncomment the following line. If you have any Arduino pins connected to 5V then make
-// sure the following line is commented out.
-//#define AREF_EXTERNAL
+// if you have the mic connected to 3.3V (recommended since the 5V line is noisy) then you should 
+// also connect AREF to 3.3V and uncomment the following line. If you have any Arduino pins connected 
+// to 5V then make sure the following line is commented out.
+#define AREF_EXTERNAL
 
 // use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
 #define DDRB_NUM 3
