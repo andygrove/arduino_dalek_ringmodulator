@@ -46,6 +46,10 @@
 // pin to use for dome lights (LEDs)
 #define DOME_LIGHT_PIN 9
 
+// the dome light will come on when the audio signal goes above this number..a quiet signal 
+// is around 127 so this number needs to be > 127 and < 255
+#define DOME_LIGHT_THRESHOLD 180
+
 // the code now supports some different effects modes, mostly to help with debugging
 #define MODE_NO_EFFECT 1 // this mode passes the mic input directly to the audio out without modification
 #define MODE_RING_MOD  2 // this is the default ring modulator mode where the mic input is mixed with a sine wave then written to audio out
@@ -76,10 +80,6 @@ const double refclk=31376.6;      // measured
 
 // Audio Memory Array 8-Bit containing sine wave
 byte sineWave[NUM_SINE_WAVE_POINTS];  
-
-// the dome light will come on when the audio signal goes above this number..a quiet signal 
-// is around 127 so this number needs to be > 127 and < 255
-const int domeLightThreshold = 180;
 
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
@@ -218,7 +218,7 @@ void loop()
   // trigger dome lights if output signal above some threshold (hard-coded 
   // for now, but I'd like to make this variable based on a pot input so 
   // it can be adjusted easily)
-  if (audioOutput > domeLightThreshold && audioOutput > light) {
+  if (audioOutput > DOME_LIGHT_THRESHOLD && audioOutput > light) {
     light = audioOutput;
   }
 
