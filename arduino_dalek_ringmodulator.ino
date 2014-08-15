@@ -29,8 +29,10 @@
 // IMPORTANT! MAKE SURE YOU CHOOSE THE CORRECT VALUES HERE, ESPECIALLY AREF! USING THE WRONG 
 // VALUES COULD POTENTIONALLY DAMAGE YOUR ARDUINO!!
 
-// if you want to use external AREF then uncomment this line and connect AREF to the reference voltage
-//#define AREF_EXTERNAL
+// if you have the mic connected to 3.3V then you should also connect AREF to 3.3V and
+// uncomment the following line. If you have any Arduino pins connected to 5V then make
+// sure the following line is commented out.
+#define AREF_EXTERNAL
 
 // use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
 #define DDRB_NUM 3
@@ -62,7 +64,7 @@ const double refclk=31376.6;      // measured
 #define FIXED_FREQ  FREQUENCY_30_HZ
 
 #ifdef FIXED_FREQ
-#define NUM_SINE_WAVE_POINTS FREQUENCY_30_HZ  
+#define NUM_SINE_WAVE_POINTS FIXED_FREQ
 #else
 #define NUM_SINE_WAVE_POINTS 1568 // refclk/2/10
 #define MIN_INCREMENT 1 // 10 Hz
