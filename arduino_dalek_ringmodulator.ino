@@ -1,6 +1,9 @@
 /* Arduino Ring Modulator a.k.a Dalek Voice Changer
  *
  * Originally written by Andy Grove in September 2012.
+ *
+ * See the README.md for list of required electronics components and link to 
+ * schematics diagram.
  * 
  * Takes mic/line input from analog pin 1 (A1) and mixes this signal with a
  * sine wave then plays the output to digital pin 10 or 11 depending on
@@ -32,7 +35,7 @@
 // if you have the mic connected to 3.3V then you should also connect AREF to 3.3V and
 // uncomment the following line. If you have any Arduino pins connected to 5V then make
 // sure the following line is commented out.
-#define AREF_EXTERNAL
+//#define AREF_EXTERNAL
 
 // use these values if you are using an Arduino Uno R3 (pin 11 for audio output)
 #define DDRB_NUM 3
